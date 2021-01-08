@@ -1,0 +1,72 @@
+id: mqttc
+broker: !secret mqtt_ip
+port: !secret mqtt_port
+username: !secret mqtt_user
+password: !secret mqtt_pass
+discovery: False
+discovery_retain: False
+on_message:
+  # alarm commands
+  - topic: $devicename/alarm/command
+    then:
+      - lambda: !lambda |-
+          if (x == "arm_home")
+            ((TuyaMCUComponent*)tuyamcu)->alarm_armHome();
+          else if (x == "arm_away")
+            ((TuyaMCUComponent*)tuyamcu)->alarm_armAway();
+          else if (x == "disarm")
+            ((TuyaMCUComponent*)tuyamcu)->alarm_disarm();
+          else if (x == "trigger")
+            ((TuyaMCUComponent*)tuyamcu)->alarm_trigger();
+  # settings
+  - topic: $devicename/setting/alarm_siren_sound/set
+    then:
+      - lambda: !lambda |-
+          if (x == "1" || x == "on" || x == "true")
+            id(alarm_siren_sound).publish_state(true);
+          else if (x == "0" || x == "off" || x == "false")
+            id(alarm_siren_sound).publish_state(false);
+  - topic: $devicename/setting/panel_beep_sound/set
+    then:
+      - lambda: !lambda |-
+          if (x == "1" || x == "on" || x == "true")
+            id(panel_beep_sound).publish_state(true);
+          else if (x == "0" || x == "off" || x == "false")
+            id(panel_beep_sound).publish_state(false);
+  - topic: $devicename/setting/low_battery_notification/set
+    then:
+      - lambda: !lambda |-
+          if (x == "1" || x == "on" || x == "true")
+            id(low_battery_notification).publish_state(true);
+          else if (x == "0" || x == "off" || x == "false")
+            id(low_battery_notification).publish_state(false);
+  - topic: $devicename/setting/mobile_notifications/set
+    then:
+      - lambda: !lambda |-
+          if (x == "1" || x == "on" || x == "true")
+            id(mobile_notifications).publish_state(true);
+          else if (x == "0" || x == "off" || x == "false")
+            id(mobile_notifications).publish_state(false);
+  - topic: $devicename/setting/entry_exit_delay_beep_sound/set
+    then:
+      - lambda: !lambda |-
+          if (x == "1" || x == "on" || x == "true")
+            id(entry_exit_delay_beep_sound).publish_state(true);
+          else if (x == "0" || x == "off" || x == "false")
+            id(entry_exit_delay_beep_sound).publish_state(false);
+  # factory reset
+  - topic: $devicename/alarm/factory_reset
+    then:
+      - lambda: !lambda |-
+          if (x == "factory_reset") ((TuyaMCUComponent*)tuyamcu)->factory_reset();
+  # accessories
+  - topic: $devicename/accessories/command
+    then:
+      - lambda: !lambda |-
+          if (x == "add") ((TuyaMCUComponent*)tuyamcu)->add_accessory();
+          else if (x == "list") ((TuyaMCUComponent*)tuyamcu)->list_accessories();
+          else if (x == "remotes") ((TuyaMCUComponent*)tuyamcu)->list_remotes();
+  # accessories
+  - topic: $devicename/accessories/set_json
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_device_config_json(x);

@@ -1,0 +1,43 @@
+- platform: template
+  id: ac_failure
+  name: "AC Power failure"
+
+- platform: template
+  id: alarm_siren_sound
+  name: "Alarm siren sound"
+  state_topic: $devicename/setting/alarm_siren_sound/state
+  on_state:
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_alarm_siren_sound(x);
+
+- platform: template
+  id: panel_beep_sound
+  name: "Panel beep sound"
+  state_topic: $devicename/setting/panel_beep_sound/state
+  on_state:
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_panel_beep_sound(x);
+
+- platform: template
+  id: low_battery_notification
+  name: "Low battery notification"
+  state_topic: $devicename/setting/low_battery_notification/state
+  on_state:
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_panel_beep_sound(x);
+
+- platform: template
+  id: mobile_notifications
+  name: "Mobile notifications"
+  state_topic: $devicename/setting/mobile_notifications/state
+  on_state:
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_mobile_notifications(x);
+
+- platform: template
+  id: entry_exit_delay_beep_sound
+  name: "Entry/exit delay beep sound"
+  state_topic: $devicename/setting/entry_exit_delay_beep_sound/state
+  on_state:
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_entry_exit_delay_beep_sound(x);

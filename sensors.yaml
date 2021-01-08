@@ -1,0 +1,56 @@
+- platform: template
+  id: battery
+  name: "Battery level"
+  unit_of_measurement: "%"
+  accuracy_decimals: 0
+
+- platform: mqtt_subscribe
+  id: exit_delay_seconds
+  name: "Exit delay seconds"
+  unit_of_measurement: "seconds"
+  accuracy_decimals: 0
+  topic: $devicename/setting/exit_delay_seconds/set
+  state_topic: $devicename/setting/exit_delay_seconds/state
+  filters:
+    - lambda: !lambda |-
+        if (isnan(x) || x < 0 || x > 60) return -1;
+        else return x;
+    - filter_out: -1
+    - delta: 1.0
+  on_value:
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_exit_delay_seconds(x);
+
+- platform: mqtt_subscribe
+  id: alarm_trigger_sound_minutes
+  name: "Alarm trigger sound minutes"
+  unit_of_measurement: "minutes"
+  accuracy_decimals: 0
+  topic: $devicename/setting/alarm_trigger_sound_minutes/set
+  state_topic: $devicename/setting/alarm_trigger_sound_minutes/state
+  filters:
+    - lambda: !lambda |-
+        if (isnan(x) || x < 1 || x > 59) return -1;
+        else return x;
+    - filter_out: -1
+    - delta: 1.0
+  on_value:
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_alarm_trigger_sound_minutes(x);
+
+- platform: mqtt_subscribe
+  id: entry_delay_seconds
+  name: "Entry delay seconds"
+  unit_of_measurement: "seconds"
+  accuracy_decimals: 0
+  topic: $devicename/setting/entry_delay_seconds/set
+  state_topic: $devicename/setting/entry_delay_seconds/state
+  filters:
+    - lambda: !lambda |-
+        if (isnan(x) || x < 0 || x > 60) return -1;
+        else return x;
+    - filter_out: -1
+    - delta: 1.0
+  on_value:
+    then:
+      - lambda: ((TuyaMCUComponent*)tuyamcu)->set_entry_delay_seconds(x);

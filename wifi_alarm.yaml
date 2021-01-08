@@ -1,0 +1,20 @@
+substitutions:
+  devicename: wifi_alarm
+
+esphome:
+  name: $devicename
+  platform: ESP8266
+  board: esp01_1m
+  includes:
+    - tuya_mcu.h
+
+ota:
+  password: !secret ota_password
+
+uart:
+  id: uart_bus
+  baud_rate: 9600
+  tx_pin: GPIO1
+  rx_pin: GPIO3
+
+<<: !include common.yaml

@@ -1,0 +1,28 @@
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_pass
+
+mqtt: !include mqtt.yaml
+
+custom_component:
+  lambda: |-
+    auto tmcu = new TuyaMCUComponent(id(uart_bus));
+    return {tmcu};
+  components:
+    - id: tuyamcu
+
+sensor: !include sensors.yaml
+
+binary_sensor: !include binary_sensors.yaml
+
+text_sensor:
+  - platform: template
+    name: Alarm state
+    id: alarm_state
+    state_topic: $devicename/alarm/state
+
+switch:
+  - platform: restart
+    id: restart_sw
+    internal: True
