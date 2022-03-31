@@ -35,6 +35,9 @@ All alarm settings can be changed through MQTT
 There are other settings that can be changed (`low_battery_notification`, `mobile_notifications`) but are useless.
 
 ## Accessories (optional)
+
+> :warning: **This may not work properly on latest hardware**: Use it with caution.
+
 This siren has the ability to register some 433Mhz devices as door/window sensors, PIR sensors, smoke sensors, etc, and remotes like keypads.
   * `wifi_alarm/accessories/command`
     * `add`: the siren will be set on pairing mode. Make your device to emit some code and will be added to the siren. The device added will be published to `wifi_alarm/accessories/remote/added`
@@ -42,16 +45,16 @@ This siren has the ability to register some 433Mhz devices as door/window sensor
     * `remotes`: a json list describing all paired remotes will be published on `wifi_alarm/accessories/remote/list`
 Each device has 3 attributes:
   * `index`: the device index
-  * `type`: device type (`0` is door/window sensor, `1` is PIR, etc...)
+  * `type`: device type (`0` is door/window sensor, `1` is PIR, `10` is vibration sensor, etc...)
   * `zone`: zone type (this defines the behavior of the siren if this device is triggered)
 
 ### Zones:
   * `0`: normal
-  * `1`: 24 hours. the alarm will always trigger, even on `disarmed` state.
+  * `1`: 24 hours. the alarm will always trigger, even on `disarmed` state. 
   * `2`: delay. the alarm will trigger after some time (`entry_delay_seconds`)
   * `3`: home. the alarm will immediately trigger only when `armed_away`.
   * `4`: 24 hours silent (useless because notifications are ignored)
-  * `5`: home with delay. the alarm will trigger afer some time (`entry_delay_seconds`) only when `armed_away`.
+  * `5`: home with delay. the alarm will trigger after some time (`entry_delay_seconds`) only when `armed_away`.
   * `6`: off
 
 ### Change device zone
