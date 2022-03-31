@@ -76,19 +76,6 @@ public:
 
   void onReceiveTuyaCmd(uint8_t cmd, uint8_t *data, uint16_t data_len)
   {
-    // debug print
-    // Serial.print("RECV: ");
-    // writeHex(cmd);
-    // uint8_t dataSizeA = data_len >> 8;
-    // uint8_t dataSizeB = data_len & 0x00FF;
-    // writeHex(dataSizeA);
-    // writeHex(dataSizeB);
-    // for (int i = 0; i < data_len; i++)
-    // {
-    //   writeHex(data[i]);
-    // }
-    // Serial.println("");
-
     // battery level
     if (cmd == 0x07 && data_len == 8 && data[0] == 0x10 && data[1] == 0x02 && data[3] == 0x04 && data[7] != 0x00)
     {
@@ -131,21 +118,14 @@ public:
       uint8_t type = data[7];
       uint8_t zone = data[8];
 
-      // Serial.print("Device added: ");
-      // writeHex(index); // idx
-      // writeHex(type);  // type
-      // writeHex(zone);  // zone
-      // Serial.println("");
-
-      StaticJsonBuffer<2000> jsonBuffer;
-      JsonObject &root = jsonBuffer.createObject();
+      StaticJsonDocument<JSON_OBJECT_SIZE(3)> root;
       root["index"] = index;
       root["type"] = type;
       root["zone"] = zone;
 
-      int len1 = root.measureLength();
+      int len1 = measureJson(root);
       char output[len1 + 1];
-      root.printTo(output, sizeof(output));
+      serializeJson(root, output, sizeof(output));
       id(mqttc).publish(App.get_name() + "/accessories/remote/added", output);
     }
     // remote added
@@ -155,79 +135,61 @@ public:
       uint8_t type = data[8];
       uint8_t zone = data[9];
 
-      // Serial.print("Remote added: ");
-      // writeHex(index); // idx
-      // writeHex(type);  // type
-      // writeHex(zone);  // zone
-      // Serial.println("");
-
-      StaticJsonBuffer<2000> jsonBuffer;
-      JsonObject &root = jsonBuffer.createObject();
+      StaticJsonDocument<JSON_OBJECT_SIZE(4)> root;
       root["index"] = index;
       root["type"] = type;
       root["zone"] = zone;
       root["isRemote"] = true;
 
-      int len1 = root.measureLength();
+      int len1 = measureJson(root);
       char output[len1 + 1];
-      root.printTo(output, sizeof(output));
+      serializeJson(root, output, sizeof(output));
       id(mqttc).publish(App.get_name() + "/accessories/added", output);
     }
     // device list
     else if (cmd == 0x07 && data_len >= 7 && data[0] == 0x26 && data[4] == 0x02 && data[5] == 0x00)
     {
       int ndev = data[6];
-      StaticJsonBuffer<2000> jsonBuffer;
-      JsonArray &arr = jsonBuffer.createArray();
+      const int capacity = JSON_ARRAY_SIZE(ndev) + ndev * JSON_OBJECT_SIZE(3);
+      DynamicJsonDocument arr(capacity);
       for (int i = 7; i < 7 + ndev * 7; i += 7)
       {
         uint8_t index = data[i];
         uint8_t type = data[i + 1];
         uint8_t zone = data[i + 2];
-        // Serial.print("Device from list: ");
-        // writeHex(index); // idx
-        // writeHex(type);  // type
-        // writeHex(zone);  // zone
-        // Serial.println("");
 
-        JsonObject &root = jsonBuffer.createObject();
+        StaticJsonDocument<JSON_OBJECT_SIZE(3)> root;
         root["index"] = index;
         root["type"] = type;
         root["zone"] = zone;
         arr.add(root);
       }
-      int len1 = arr.measureLength();
+      int len1 = measureJson(arr);
       char output[len1 + 1];
-      arr.printTo(output, sizeof(output));
+      serializeJson(arr, output, sizeof(output));
       id(mqttc).publish(App.get_name() + "/accessories/list", output);
     }
     // remote list
     else if (cmd == 0x07 && data_len >= 7 && data[0] == 0x26 && data[4] == 0x02 && data[5] == 0x01)
     {
       int ndev = data[6];
-      StaticJsonBuffer<2000> jsonBuffer;
-      JsonArray &arr = jsonBuffer.createArray();
+      const int capacity = JSON_ARRAY_SIZE(ndev) + ndev * JSON_OBJECT_SIZE(4);
+      DynamicJsonDocument arr(capacity);
       for (int i = 7; i < 7 + ndev * 7; i += 7)
       {
         uint8_t index = data[i];
         uint8_t type = data[i + 1];
         uint8_t zone = data[i + 2];
-        // Serial.print("Remote from list: ");
-        // writeHex(index); // idx
-        // writeHex(type);  // type
-        // writeHex(zone);  // zone
-        // Serial.println("");
-
-        JsonObject &root = jsonBuffer.createObject();
+        StaticJsonDocument<JSON_OBJECT_SIZE(4)> root;
         root["index"] = index;
         root["type"] = type;
         root["zone"] = zone;
         root["isRemote"] = true;
         arr.add(root);
       }
-      int len1 = arr.measureLength();
+      int len1 = measureJson(arr);
       char output[len1 + 1];
-      arr.printTo(output, sizeof(output));
+      serializeJson(arr, output, sizeof(output));
       id(mqttc).publish(App.get_name() + "/accessories/remote/list", output);
     }
     // factory reset response
@@ -429,6 +391,10 @@ public:
   // set device config
   void set_device_config(uint8_t index, uint8_t type, uint8_t zone)
   {
+    // check ranges
+    if (zone > 7) {
+      return;
+    }
     uint8_t data[] = {0x26, 0x00, 0x00, 0x09, 0x04, 0x00, index, type, zone, 0xff, 0xff, 0xff, 0xff};
     send_data_cmd(0x06, data, sizeof(data));
   }
@@ -436,12 +402,14 @@ public:
   // set device config
   void set_device_config_json(std::string data)
   {
-    StaticJsonBuffer<200> jb;
-    JsonObject &obj = jb.parseObject(data);
-    uint8_t index = obj["index"];
-    uint8_t type = obj["type"];
-    uint8_t zone = obj["zone"];
-    set_device_config(index, type, zone);
+    StaticJsonDocument<JSON_OBJECT_SIZE(4)> obj;
+    DeserializationError err = deserializeJson(obj, data);
+    if (err == DeserializationError::Ok) {
+      uint8_t index = obj["index"];
+      uint8_t type = obj["type"];
+      uint8_t zone = obj["zone"];
+      set_device_config(index, type, zone);
+    }
   }
 
   void send_cmd(uint8_t *cmd, int size)
